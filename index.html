@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Acton Academy · Camino al equilibrio</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+:root{
+  /* surfaces */
+  --ink:#080C15; --ink-2:#0C1220; --surf:#121A2A; --surf-2:#16203200; --elev:#1A2436;
+  --line:rgba(255,255,255,.07); --line-2:rgba(255,255,255,.04); --gold:#C9A24B;
+  /* text */
+  --tx:#EAEDF4; --tx-2:#8C95AB; --tx-3:#5A6379;
+  /* semantic */
+  --pos:#3FD89B; --pos-d:#1E9E72; --pos-bg:rgba(63,216,155,.10);
+  --warn:#F4B740; --warn-bg:rgba(244,183,64,.11);
+  --neg:#FF6B6B; --neg-d:#E5484D; --neg-bg:rgba(255,107,107,.10);
+  --blue:#5B9BFF; --blue-bg:rgba(91,155,255,.10);
+  --viol:#9B8CFF; --viol-bg:rgba(155,140,255,.10);
+  --r:12px; --r-s:9px; --r-l:18px;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{font-size:16px;-webkit-text-size-adjust:100%}
+body{
+  font-family:'Inter',system-ui,sans-serif;color:var(--tx);min-height:100vh;
+  background:
+    radial-gradient(1200px 600px at 78% -8%,rgba(91,155,255,.10),transparent 60%),
+    radial-gradient(900px 500px at 0% 0%,rgba(63,216,155,.06),transparent 55%),
+    var(--ink);
+  -webkit-font-smoothing:antialiased;
+}
+.mono{font-family:'JetBrains Mono',monospace;font-variant-numeric:tabular-nums;font-feature-settings:"tnum"}
+.disp{font-family:'Space Grotesk',sans-serif}
+
+/* ───── NAV ───── */
+.nav{
+  position:sticky;top:0;z-index:200;display:flex;align-items:center;gap:0;
+  padding:0 clamp(1rem,3vw,1.7rem);
+  background:rgba(8,12,21,.78);backdrop-filter:blur(18px);
+  border-bottom:1px solid var(--line);
+}
+.brand{display:flex;align-items:center;gap:.6rem;padding:.95rem 1.2rem .95rem 0;margin-right:.4rem;border-right:1px solid var(--line);white-space:nowrap}
+.brand .glyph{width:26px;height:26px;border-radius:7px;background:linear-gradient(135deg,var(--pos-d),var(--blue));display:grid;place-items:center;font-family:'Space Grotesk';font-weight:700;font-size:.85rem;color:#fff;box-shadow:0 0 0 1px rgba(255,255,255,.08) inset}
+.brand .bt{font-family:'Space Grotesk';font-weight:600;font-size:.92rem;letter-spacing:-.01em}
+.brand .bs{font-size:.64rem;color:var(--tx-3);font-weight:500;display:block;margin-top:1px;letter-spacing:.02em}
+.tabs{display:flex;gap:0;overflow-x:auto;scrollbar-width:none}
+.tabs::-webkit-scrollbar{display:none}
+.tab{padding:1rem .95rem;font-size:.8rem;font-weight:500;color:var(--tx-2);cursor:pointer;border-bottom:2px solid transparent;transition:color .18s,border-color .18s;white-space:nowrap;background:none;border-top:none;border-left:none;border-right:none;font-family:inherit}
+.tab:hover{color:var(--tx)}
+.tab.active{color:var(--tx);border-bottom-color:var(--pos)}
+.nav-r{margin-left:auto;display:flex;align-items:center;gap:.6rem;padding-left:.6rem}
+.live{display:flex;align-items:center;gap:7px;background:rgba(255,255,255,.04);border:1px solid var(--line);border-radius:30px;padding:.34rem .8rem;font-size:.72rem;color:var(--tx-2)}
+.live .dot{width:6px;height:6px;border-radius:50%;background:var(--pos);box-shadow:0 0 0 3px var(--pos-bg);animation:pulse 2.4s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.35}}
+
+/* ───── PAGE / LAYOUT ───── */
+.page{display:none;padding:clamp(1rem,3vw,1.8rem) clamp(1rem,3vw,1.8rem) 3rem;max-width:1180px;margin:0 auto}
+.page.active{display:block;animation:fade .35s ease}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+
+/* tier headers */
+.tier{display:flex;align-items:baseline;gap:.7rem;margin:2.1rem 0 1rem}
+.tier:first-of-type{margin-top:.4rem}
+.tier .n{font-family:'Space Grotesk';font-weight:700;font-size:.8rem;color:var(--tx-3)}
+.tier .t{font-family:'Space Grotesk';font-weight:600;font-size:1.02rem;letter-spacing:-.01em}
+.tier .d{font-size:.74rem;color:var(--tx-3);margin-left:auto;text-align:right;line-height:1.4}
+.tier .rule{height:1px;background:var(--line);flex:1;align-self:center;margin:0 .2rem}
+
+/* ───── STATUS STRIP ───── */
+.status{
+  display:flex;align-items:center;gap:1rem;flex-wrap:wrap;
+  background:linear-gradient(120deg,var(--pos-bg),transparent 70%),var(--surf);
+  border:1px solid var(--line);border-left:3px solid var(--pos);
+  border-radius:var(--r);padding:1rem 1.3rem;margin-top:.3rem;
+}
+.status .led{width:11px;height:11px;border-radius:50%;background:var(--pos);box-shadow:0 0 14px var(--pos),0 0 0 4px var(--pos-bg);flex-shrink:0}
+.status .verd{font-family:'Space Grotesk';font-weight:700;font-size:.95rem;letter-spacing:.04em}
+.status .msg{font-size:.82rem;color:var(--tx-2);line-height:1.5;flex:1;min-width:240px}
+.status .msg b{color:var(--tx);font-weight:600}
+.status .prog{text-align:right;flex-shrink:0}
+.status .prog .pv{font-family:'Space Grotesk';font-weight:700;font-size:1.5rem;line-height:1}
+.status .prog .pl{font-size:.68rem;color:var(--tx-3);text-transform:uppercase;letter-spacing:.08em;margin-top:3px}
+
+/* ───── KPI CARDS ───── */
+.kgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(186px,1fr));gap:12px;margin-top:1rem}
+.kpi{
+  background:linear-gradient(180deg,rgba(255,255,255,.025),transparent),var(--surf);
+  border:1px solid var(--line);border-radius:var(--r);padding:1.05rem 1.1rem;position:relative;overflow:hidden;
+  transition:border-color .2s,transform .2s;
+}
+.kpi:hover{border-color:rgba(255,255,255,.16);transform:translateY(-2px)}
+.kpi .top{display:flex;align-items:center;justify-content:space-between;gap:.5rem}
+.kpi .lbl{font-size:.66rem;font-weight:600;color:var(--tx-2);text-transform:uppercase;letter-spacing:.07em}
+.kpi .val{font-family:'Space Grotesk';font-weight:700;font-size:1.74rem;line-height:1.05;margin-top:.5rem;letter-spacing:-.02em}
+.kpi .sub{font-size:.7rem;color:var(--tx-3);margin-top:.35rem;line-height:1.45}
+.kpi .spark{margin-top:.7rem;height:34px}
+.kpi .spark svg{display:block;width:100%;height:34px;overflow:visible}
+.delta{font-family:'JetBrains Mono';font-size:.66rem;font-weight:600;padding:2px 7px;border-radius:20px;white-space:nowrap}
+.d-pos{background:var(--pos-bg);color:var(--pos)}
+.d-neg{background:var(--neg-bg);color:var(--neg)}
+.d-warn{background:var(--warn-bg);color:var(--warn)}
+.d-neu{background:rgba(255,255,255,.06);color:var(--tx-2)}
+.kpi.accent-pos{border-top:2px solid var(--pos)}
+.kpi.accent-neg{border-top:2px solid var(--neg)}
+.kpi.accent-warn{border-top:2px solid var(--warn)}
+.kpi.accent-blue{border-top:2px solid var(--blue)}
+.kpi.accent-gold{border-top:2px solid var(--gold)}
+.kpi.accent-viol{border-top:2px solid var(--viol)}
+
+/* ───── SECTION CARD ───── */
+.sec{background:var(--surf);border:1px solid var(--line);border-radius:var(--r-l);padding:1.25rem 1.4rem;margin-bottom:14px}
+.sh{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:.6rem;margin-bottom:1rem}
+.st{font-size:.72rem;font-weight:700;color:var(--tx);text-transform:uppercase;letter-spacing:.07em}
+.ss{font-size:.7rem;color:var(--tx-3);margin-top:3px;font-weight:400;text-transform:none;letter-spacing:0}
+.leg{display:flex;flex-wrap:wrap;gap:5px 13px;font-size:.68rem;color:var(--tx-2)}
+.ls{width:9px;height:9px;border-radius:3px;display:inline-block;margin-right:5px;vertical-align:middle}
+.cw{position:relative;width:100%}
+.insight{background:var(--ink-2);border:1px solid var(--line-2);border-left:2px solid var(--blue);border-radius:var(--r-s);padding:.7rem .95rem;margin-top:.95rem;font-size:.77rem;color:var(--tx-2);line-height:1.6}
+.insight.warn{border-left-color:var(--warn)}
+.insight.pos{border-left-color:var(--pos)}
+.insight b{color:var(--tx);font-weight:600}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:720px){.two{grid-template-columns:1fr}}
+
+/* ───── ALERT CALLOUT ───── */
+.alert{
+  display:flex;gap:1rem;align-items:flex-start;
+  background:linear-gradient(120deg,var(--warn-bg),transparent 60%),var(--surf);
+  border:1px solid rgba(244,183,64,.3);border-radius:var(--r-l);padding:1.1rem 1.3rem;margin-bottom:14px;
+}
+.alert .ico{font-size:1.3rem;line-height:1;flex-shrink:0;filter:saturate(1.1)}
+.alert .ah{font-family:'Space Grotesk';font-weight:600;font-size:.92rem;color:var(--warn);margin-bottom:.3rem}
+.alert .ab overtaken{font-size:.8rem;color:var(--tx-2);line-height:1.6}
+.alert .ab b{color:var(--tx)}
+
+/* ───── TIMELINE ───── */
+.tl-head{display:flex;justify-content:space-between;font-size:.68rem;color:var(--tx-3);margin-bottom:.45rem;gap:.5rem;flex-wrap:wrap}
+.tl-head .now{color:var(--warn);font-weight:600}
+.tl-bar{height:9px;border-radius:6px;background:rgba(255,255,255,.06);position:relative;margin:.3rem 0 .5rem}
+.tl-fill{height:100%;border-radius:6px;background:linear-gradient(90deg,var(--blue),var(--pos));transition:width .8s cubic-bezier(.2,.8,.2,1)}
+.tl-dot{position:absolute;top:50%;transform:translate(-50%,-50%);width:15px;height:15px;border-radius:50%;border:3px solid var(--ink);background:var(--warn);box-shadow:0 0 0 3px var(--warn),0 0 14px var(--warn);transition:left .8s cubic-bezier(.2,.8,.2,1)}
+
+/* ───── OPERATIVO mini-viz ───── */
+.opbar{margin-top:.3rem}
+.opbar .row{display:flex;align-items:center;justify-content:space-between;font-size:.74rem;margin-bottom:.5rem}
+.opbar .row .k{color:var(--tx-2)}
+.opbar .track{height:24px;border-radius:7px;background:rgba(255,255,255,.05);position:relative;overflow:hidden}
+.opbar .seg{position:absolute;top:0;left:0;height:100%;border-radius:7px;display:flex;align-items:center;padding-left:.6rem;font-size:.7rem;font-weight:600;color:#fff;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+
+/* ───── HEROES MONITOS ───── */
+.heroes-wrap{display:grid;grid-template-columns:1fr minmax(190px,auto);gap:1.4rem;align-items:start}
+@media(max-width:660px){.heroes-wrap{grid-template-columns:1fr}}
+.hgrid{display:flex;flex-wrap:wrap;gap:11px 8px;margin-top:.2rem}
+.h-item{display:flex;flex-direction:column;align-items:center;gap:4px;width:54px}
+.h-item .hn{font-size:.57rem;color:var(--tx-2);text-align:center;line-height:1.25;word-break:break-word;font-weight:500}
+.h-item .hp{font-family:'JetBrains Mono';font-size:.56rem;font-weight:600;text-align:center}
+.h-item.t-full .hp{color:var(--pos)}
+.h-item.t-part .hp{color:var(--warn)}
+.h-item.t-beca .hp{color:var(--neg)}
+.eqt{min-width:190px}
+.eqt table{width:100%;border-collapse:collapse;font-size:.74rem}
+.eqt th{font-size:.62rem;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-3);padding:.4rem .5rem;border-bottom:1px solid var(--line);text-align:left;font-weight:600}
+.eqt td{padding:.46rem .5rem;border-bottom:1px solid var(--line-2)}
+.eqt tr:last-child td{border-bottom:none}
+.eqt tr.now td{background:var(--warn-bg)}
+.eqt tr.ok td{background:var(--pos-bg)}
+
+/* ───── BENCHMARKS ───── */
+.bgrid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line);border-radius:var(--r-l);overflow:hidden;margin-top:.2rem}
+@media(max-width:560px){.bgrid{grid-template-columns:1fr}}
+.bcol{background:var(--surf);padding:1.3rem 1.4rem}
+.bcol.ours{background:linear-gradient(150deg,#0F6E56,#11502f)}
+.bct{font-size:.65rem;font-weight:700;text-transform:uppercase;letter-spacing:.09em;margin-bottom:11px;color:var(--tx-3)}
+.bcol.ours .bct{color:rgba(255,255,255,.65)}
+.bstat{margin-bottom:1rem}.bstat:last-child{margin-bottom:0}
+.bnum{font-family:'Space Grotesk';font-weight:700;font-size:1.85rem;line-height:1;color:var(--tx-2)}
+.bcol.ours .bnum{color:#fff}
+.blbl{font-size:.71rem;color:var(--tx-3);margin-top:.25rem;line-height:1.45}
+.bcol.ours .blbl{color:rgba(255,255,255,.78)}
+.bd{display:inline-block;font-family:'JetBrains Mono';font-size:.65rem;font-weight:600;padding:2px 8px;border-radius:20px;margin-top:.35rem;background:rgba(255,255,255,.18);color:#fff}
+.bdiv{height:1px;background:var(--line-2);margin:.85rem 0}
+.bcol.ours .bdiv{background:rgba(255,255,255,.14)}
+
+/* ───── EDIT PAGE ───── */
+.ep-note{font-size:.76rem;color:var(--blue);line-height:1.55;margin-bottom:1.2rem;padding:.75rem 1rem;background:var(--blue-bg);border:1px solid rgba(91,155,255,.22);border-radius:var(--r)}
+.ep-note b{color:var(--tx)}
+.eps{margin-bottom:1.7rem}
+.epst{font-size:.7rem;font-weight:700;text-transform:uppercase;letter-spacing:.07em;color:var(--tx-2);margin-bottom:.85rem;padding-bottom:.5rem;border-bottom:1px solid var(--line)}
+.epg{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:11px}
+.epf label{display:block;font-size:.69rem;color:var(--tx-2);margin-bottom:5px;font-weight:500}
+.epf input,.epf textarea{
+  width:100%;padding:.5rem .7rem;border:1px solid var(--line);border-radius:var(--r-s);
+  font-family:'JetBrains Mono';font-size:.78rem;background:var(--ink-2);color:var(--tx);resize:vertical;transition:border-color .15s,background .15s;
+}
+.epf input:focus,.epf textarea:focus{outline:none;border-color:var(--blue);background:var(--ink)}
+.epf.full{grid-column:1/-1}
+.epf textarea{min-height:54px;line-height:1.5}
+.epf .nm-in{font-family:'Inter'!important}
+.epbtns{display:flex;gap:.7rem;flex-wrap:wrap;margin-top:.3rem;align-items:center}
+.btn{border:none;border-radius:var(--r-s);padding:.6rem 1.4rem;font-size:.8rem;font-weight:600;cursor:pointer;font-family:inherit;transition:opacity .15s,transform .1s}
+.btn:active{transform:scale(.98)}
+.btn.pri{background:linear-gradient(135deg,var(--pos-d),var(--pos));color:#04130d}
+.btn.pri:hover{opacity:.9}
+.btn.sec{background:rgba(255,255,255,.06);color:var(--tx);border:1px solid var(--line)}
+.btn.sec:hover{background:rgba(255,255,255,.1)}
+.epstat{font-size:.76rem;color:var(--pos);font-weight:600;opacity:0;transition:opacity .25s}
+.epstat.show{opacity:1}
+
+.foot{text-align:center;font-size:.68rem;color:var(--tx-3);margin-top:2.4rem;padding-bottom:1rem;line-height:1.7}
+.foot b{color:var(--tx-2)}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+<nav class="nav">
+  <div class="brand">
+    <span class="glyph">A</span>
+    <span><span class="bt">Acton Academy</span><span class="bs">Camino al equilibrio · Escenario A</span></span>
+  </div>
+  <div class="tabs">
+    <button class="tab active" onclick="showPage('dashboard',this)">Tablero</button>
+    <button class="tab" onclick="showPage('editar',this)">Editar datos</button>
+  </div>
+  <div class="nav-r">
+    <span class="live"><span class="dot"></span><span id="badge-hoy">Jun 2026</span></span>
+  </div>
+</nav>
+
+<div class="page active" id="page-dashboard">
+
+  <div class="status" id="status-strip">
+    <span class="led" id="status-led"></span>
+    <div>
+      <div class="verd" id="status-verd">EN RUTA</div>
+    </div>
+    <div class="msg" id="status-msg"></div>
+    <div class="prog">
+      <div class="pv disp" id="status-pct">38%</div>
+      <div class="pl">del camino</div>
+    </div>
+  </div>
+
+  <div class="tier">
+    <span class="n">01</span><span class="t">Ejecutivo</span>
+    <span class="rule"></span>
+    <span class="d">¿Cómo vamos a alto nivel?</span>
+  </div>
+
+  <div class="kgrid" id="kpi-grid"></div>
+
+  <div class="tier">
+    <span class="n">02</span><span class="t">Operativo</span>
+    <span class="rule"></span>
+    <span class="d">¿Dónde están las palancas y los cuellos de botella?</span>
+  </div>
+
+  <div class="sec">
+    <div class="sh"><div><div class="st">Trayectoria al punto de equilibrio</div><div class="ss">Sep 2025 → Sep 2027 · 25 meses</div></div></div>
+    <div class="tl-head">
+      <span>Sep'25 · arranque · 6 héroes</span>
+      <span class="now" id="tl-now">Hoy · Jun'26 · 9 héroes</span>
+      <span>Sep'27 · equilibrio · 39 héroes</span>
+    </div>
+    <div class="tl-bar">
+      <div class="tl-fill" id="tl-fill"></div>
+      <div class="tl-dot" id="tl-dot"></div>
+    </div>
+    <div class="insight" id="tl-insight"></div>
+  </div>
+
+  <div class="two">
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh"><div><div class="st">Brecha de becas</div><div class="ss">Héroes vs. Cuotas equivalentes</div></div></div>
+      <div class="cw" style="height:215px"><canvas id="becasChart" role="img" aria-label="Brecha de becas"></canvas></div>
+      <div class="insight warn" id="becas-insight"></div>
+    </div>
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh"><div><div class="st">Tasa de cobro efectiva</div><div class="ss">Cuotas completas equivalentes ÷ héroes</div></div></div>
+      <div class="opbar">
+        <div class="row"><span class="k">Cobro pleno</span><span class="mono" id="coll-pct">59%</span></div>
+        <div class="track">
+          <div class="seg" id="coll-seg" style="background:linear-gradient(90deg,var(--pos-d),var(--pos))"></div>
+        </div>
+      </div>
+      <div class="insight" id="coll-insight"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh">
+      <div><div class="st">Composición de héroes activos</div><div class="ss">Cada figura es un héroe inscrito · proyección de equilibrio a la derecha</div></div>
+      <div class="leg">
+        <span><span class="ls" style="background:var(--pos)"></span>Cuota 100%</span>
+        <span><span class="ls" style="background:var(--warn)"></span>Parcial</span>
+        <span><span class="ls" style="background:var(--neg)"></span>Beca 100%</span>
+        <span><span class="ls" style="background:rgba(255,255,255,.12);border:1px solid var(--tx-3)"></span>Plaza libre</span>
+      </div>
+    </div>
+    <div class="heroes-wrap">
+      <div id="hgrid" class="hgrid"></div>
+      <div class="eqt">
+        <table>
+          <thead><tr><th>Periodo</th><th style="text-align:right">Nec.</th><th></th></tr></thead>
+          <tbody id="eq-tbody"></tbody>
+        </table>
+        <div style="font-size:.64rem;color:var(--tx-3);margin-top:.5rem;line-height:1.4">Necesarios = gastos ÷ ticket del periodo</div>
+      </div>
+    </div>
+    <div class="insight" id="heroes-insight"></div>
+  </div>
+
+  <div class="alert" id="cliff-alert">
+    <span class="ico">⚠️</span>
+    <div>
+      <div class="ah">Escalón de costos · Sep 2026 — el mayor riesgo de ejecución</div>
+      <div class="ab" id="cliff-body"></div>
+    </div>
+  </div>
+
+  <div class="tier">
+    <span class="n">03</span><span class="t">Analítico</span>
+    <span class="rule"></span>
+    <span class="d">El detalle del modelo</span>
+  </div>
+
+  <div class="two">
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh">
+        <div><div class="st">Ingresos vs. gastos</div><div class="ss">Mensual · MXN</div></div>
+        <div class="leg">
+          <span><span class="ls" style="background:var(--pos)"></span>Ingresos</span>
+          <span><span class="ls" style="background:var(--neg)"></span>Gastos</span>
+        </div>
+      </div>
+      <div class="cw" style="height:215px"><canvas id="ingGasChart" role="img" aria-label="Ingresos vs gastos"></canvas></div>
+      <div class="insight" id="ig-insight"></div>
+    </div>
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh">
+        <div><div class="st">EBITDA mensual</div><div class="ss">Resultado operativo · MXN</div></div>
+        <div class="leg">
+          <span><span class="ls" style="background:var(--neg)"></span>Pérdida</span>
+          <span><span class="ls" style="background:var(--pos)"></span>Ganancia</span>
+        </div>
+      </div>
+      <div class="cw" style="height:215px"><canvas id="ebitdaChart" role="img" aria-label="EBITDA mensual"></canvas></div>
+      <div class="insight pos" id="eb-insight"></div>
+    </div>
+  </div>
+
+  <div class="two">
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh">
+        <div><div class="st">Héroes y ticket promedio</div><div class="ss">Doble eje · inicio → hoy → equilibrio</div></div>
+        <div class="leg">
+          <span><span class="ls" style="background:var(--blue)"></span>Héroes</span>
+          <span><span class="ls" style="background:var(--viol)"></span>Ticket</span>
+        </div>
+      </div>
+      <div class="cw" style="height:215px"><canvas id="evolChart" role="img" aria-label="Héroes y ticket"></canvas></div>
+      <div class="insight" id="ev-insight"></div>
+    </div>
+    <div class="sec" style="margin-bottom:0">
+      <div class="sh">
+        <div><div class="st">Altas de héroes por mes</div><div class="ss">Real vs. proyección</div></div>
+        <div class="leg">
+          <span><span class="ls" style="background:var(--blue)"></span>Real</span>
+          <span><span class="ls" style="background:rgba(91,155,255,.4)"></span>Proyección</span>
+        </div>
+      </div>
+      <div class="cw" style="height:215px"><canvas id="nuevosChart" role="img" aria-label="Altas por mes"></canvas></div>
+      <div class="insight" id="nv-insight"></div>
+    </div>
+  </div>
+
+  <div class="sec">
+    <div class="sh"><div><div class="st">Contexto de mercado — Acton vs. sector</div><div class="ss">Referencias de la industria educativa privada</div></div></div>
+    <div class="bgrid">
+      <div class="bcol">
+        <div class="bct">Sector educativo privado</div>
+        <div class="bstat"><div class="bnum" style="color:var(--neg)">2–3%</div><div class="blbl">Crecimiento anual de matrícula en escuelas privadas establecidas en México (SEP 2023)</div></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum" style="color:var(--neg)">3–5 años</div><div class="blbl">Tiempo promedio al punto de equilibrio de una escuela privada nueva en Latinoamérica</div></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum" style="color:var(--neg)">11–12</div><div class="blbl">Alumnos con los que abrió la Acton original en Austin en su primer año (2009)</div></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum" style="color:var(--neg)">38%</div><div class="blbl">Crecimiento de matrícula en microescuelas maduras (mediana global 2024→2025, NMC)</div></div>
+      </div>
+      <div class="bcol ours">
+        <div class="bct">Esta Acton Academy</div>
+        <div class="bstat"><div class="bnum">50%</div><div class="blbl">Crecimiento de héroes en el primer año (6 → 9)</div><span class="bd">17× más rápido</span></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum">2 años</div><div class="blbl">Tiempo proyectado al equilibrio (Sep 2027)</div><span class="bd">2× más rápido</span></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum">6</div><div class="blbl">Héroes al arranque — dentro del rango Acton global, mercado latam más conservador</div><span class="bd">En rango</span></div>
+        <div class="bdiv"></div>
+        <div class="bstat"><div class="bnum">130%</div><div class="blbl">Crecimiento de cuotas completas equivalentes año 1 (2.3 → 5.3)</div><span class="bd">3.4× más rápido</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="foot">
+    <b>Acton Academy</b> · Escenario A 2025–2027 · Resultado operativo (EBITDA) antes de inversión en activos<br>
+    Datos reales hasta Jun 2026 · El resto es proyección · Editable en la pestaña "Editar datos"
+  </div>
+</div>
+
+<div class="page" id="page-editar">
+  <div class="ep-note">Edita cualquier valor y presiona <b>Guardar y actualizar</b>. Los arrays llevan 25 valores separados por coma (Sep'25 → Sep'27). Todo el tablero — KPIs, equilibrio y gráficos — se recalcula al instante.</div>
+
+  <div class="eps">
+    <div class="epst">Situación actual (actualiza cada mes)</div>
+    <div class="epg">
+      <div class="epf"><label>Héroes activos hoy</label><input type="number" id="in-heroes" step="1"></div>
+      <div class="epf"><label>Cuotas completas equiv. hoy</label><input type="number" id="in-cuotas" step="0.1"></div>
+      <div class="epf"><label>Ticket promedio hoy (MXN)</label><input type="number" id="in-ticket" step="1"></div>
+      <div class="epf"><label>Mes actual (0=Sep'25 … 24=Sep'27)</label><input type="number" id="in-mes" step="1" min="0" max="24"></div>
+      <div class="epf"><label>Meses reales hasta índice (9=Jun'26)</label><input type="number" id="in-reales" step="1" min="0" max="24"></div>
+      <div class="epf"><label>Capacidad total de héroes</label><input type="number" id="in-cap" step="1"></div>
+    </div>
+  </div>
+
+  <div class="eps">
+    <div class="epst">Héroes nombrados</div>
+    <div class="epg">
+      <div class="epf full"><label>Cuota 100% — nombres separados por coma</label><input class="nm-in" type="text" id="in-nc"></div>
+      <div class="epf full"><label>Cuota parcial — formato Nombre:porcentaje (ej. Sebastian:50, JP:65)</label><input class="nm-in" type="text" id="in-np"></div>
+      <div class="epf full"><label>Beca 100% — nombres separados por coma</label><input class="nm-in" type="text" id="in-nb"></div>
+    </div>
+  </div>
+
+  <div class="eps">
+    <div class="epst">Arrays de proyección — 25 valores (Sep'25 → Sep'27)</div>
+    <div class="epg" style="grid-template-columns:1fr">
+      <div class="epf"><label>Héroes activos</label><textarea id="in-ah"></textarea></div>
+      <div class="epf"><label>Cuotas completas equivalentes</label><textarea id="in-ac"></textarea></div>
+      <div class="epf"><label>Altas (nuevos héroes) por mes</label><textarea id="in-an"></textarea></div>
+      <div class="epf"><label>Ingresos mensuales (MXN)</label><textarea id="in-ai"></textarea></div>
+      <div class="epf"><label>Gastos mensuales (MXN)</label><textarea id="in-ag"></textarea></div>
+      <div class="epf"><label>Ticket promedio mensual (MXN)</label><textarea id="in-at"></textarea></div>
+    </div>
+  </div>
+
+  <div class="epbtns">
+    <button class="btn pri" onclick="guardar()">Guardar y actualizar</button>
+    <button class="btn sec" onclick="poblar()">Descartar cambios</button>
+    <span class="epstat" id="ep-status">✓ Tablero actualizado</span>
+  </div>
+</div>
+
+<script>
+/* ════════ DATOS EDITABLES ════════ */
+let HOY_HEROES = 9, HOY_CUOTAS = 5.3, HOY_TICKET = 4231, HOY_IDX = 9, REALES = 9, CAP = 80;
+
+let COMPLETAS = ["Jimena","Carmen Sofía","Julia"];
+let PARCIALES = [{n:"Sebastian Barba",p:50},{n:"Matías",p:50},{n:"JP",p:65},{n:"Sebastian",p:65}];
+let BECAS = ["Samuel","Juan Enrique"];
+
+let LABELS=["Sep'25","Oct","Nov","Dic","Ene'26","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep'26","Oct","Nov","Dic","Ene'27","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep'27"];
+let HEROES=[6,8,8,8,8,8,8,8,8,9,9,9,13,19,19,19,19,19,19,21,21,21,25,31,39];
+let CUOTAS=[2.3,4.3,4.3,4.3,4.3,4.3,4.3,4.3,4.3,5.3,5.3,5.3,7.35,13.35,13.35,13.35,13.35,13.35,13.35,15.35,15.35,15.35,19.35,25.35,33.35];
+let NUEVOS=[6,2,0,0,0,0,0,0,0,1,0,0,4,6,0,0,0,0,0,2,0,0,4,6,8];
+let INGRESOS=[16523,30891,30891,30891,30891,30891,30891,30891,30891,39075,39075,39075,110500,184000,134500,134500,134500,134500,134500,162000,154500,154500,200500,259000,423175];
+let GASTOS=[81648,81648,81648,81648,81648,81648,81648,81648,81648,86648,86648,86648,219768,225768,207768,207768,207768,207768,207768,213768,207768,207768,219768,225768,371975];
+let TICKET=[2754,3861,3861,3861,3861,3861,3861,3861,3861,4231,4231,4231,5654,7026,7026,7026,7026,7026,7026,7310,7310,7310,7740,8177,9053];
+
+/* ════════ HELPERS ════════ */
+const C={tx:'#EAEDF4',tx2:'#8C95AB',tx3:'#5A6379',pos:'#3FD89B',posD:'#1E9E72',neg:'#FF6B6B',warn:'#F4B740',blue:'#5B9BFF',viol:'#9B8CFF',grid:'rgba(255,255,255,.055)',gold:'#C9A24B'};
+const fmt=v=>'$'+Math.round(v).toLocaleString('es-MX');
+const fmtK=v=>{const a=Math.abs(v);const s=v<0?'-':'';return a>=1e6?s+'$'+(a/1e6).toFixed(a>=1e7?1:2)+'M':s+'$'+Math.round(a/1000)+'k';};
+const tf={size:10,family:'JetBrains Mono,monospace'};
+const reduce=window.matchMedia('(prefers-reduced-motion:reduce)').matches;
+
+function derived(){
+  const eb=INGRESOS.map((v,i)=>v-GASTOS[i]);
+  const cum=[];let s=0;eb.forEach(e=>{s+=e;cum.push(s);});
+  let fp=eb.findIndex(e=>e>=0);if(fp<0)fp=eb.length-1;
+  return {eb,cum,fp,deployed:cum[Math.min(REALES,cum.length-1)]};
+}
+
+function spark(data,{color=C.blue,fill=true,zero=false,h=34,w=160,today=null}={}){
+  const pts=data.map((v,i)=>({v,i})).filter(p=>p.v!=null&&!isNaN(p.v));
+  if(!pts.length)return'';
+  let lo=Math.min(...pts.map(p=>p.v)),hi=Math.max(...pts.map(p=>p.v));
+  if(zero){lo=Math.min(lo,0);hi=Math.max(hi,0);}
+  const rg=(hi-lo)||1,n=data.length-1||1,pad=3;
+  const X=i=>(i/n)*(w-pad*2)+pad, Y=v=>h-pad-((v-lo)/rg)*(h-pad*2);
+  let d='';pts.forEach((p,k)=>{d+=(k?'L':'M')+X(p.i).toFixed(1)+' '+Y(p.v).toFixed(1)+' ';});
+  const id='g'+Math.random().toString(36).slice(2,7);
+  let area='';
+  if(fill){const last=pts[pts.length-1],first=pts[0];area=`<path d="${d}L${X(last.i).toFixed(1)} ${h-pad} L${X(first.i).toFixed(1)} ${h-pad} Z" fill="url(#${id})"/>`;}
+  let zl=zero?`<line x1="${pad}" y1="${Y(0).toFixed(1)}" x2="${w-pad}" y2="${Y(0).toFixed(1)}" stroke="rgba(255,255,255,.14)" stroke-width="1" stroke-dasharray="2 3"/>`:'';
+  let tdot=(today!=null&&data[today]!=null)?`<circle cx="${X(today).toFixed(1)}" cy="${Y(data[today]).toFixed(1)}" r="2.6" fill="${color}" stroke="#080C15" stroke-width="1.5"/>`:'';
+  return `<svg viewBox="0 0 ${w} ${h}" preserveAspectRatio="none">
+    <defs><linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="${color}" stop-opacity=".28"/><stop offset="1" stop-color="${color}" stop-opacity="0"/>
+    </linearGradient></defs>${zl}${area}
+    <path d="${d}" fill="none" stroke="${color}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>${tdot}</svg>`;
+}
+
+function svgPerson(fill,stroke,opacity=1,size=30){
+  return `<svg width="${size}" height="${Math.round(size*1.22)}" viewBox="0 0 30 37" fill="none" style="opacity:${opacity}">
+    <circle cx="15" cy="9" r="7.5" fill="${fill}" stroke="${stroke}" stroke-width="1.6"/>
+    <path d="M1 36c0-7.732 6.268-14 14-14s14 6.268 14 14" fill="${fill}" stroke="${stroke}" stroke-width="1.6" stroke-linecap="round"/></svg>`;
+}
+
+function animateVal(el,to,{prefix='',suffix='',dec=0}={}){
+  if(reduce){el.textContent=prefix+to.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suffix;return;}
+  const dur=750,t0=performance.now(),from=0;
+  function step(t){const k=Math.min(1,(t-t0)/dur),e=1-Math.pow(1-k,3),v=from+(to-from)*e;
+    el.textContent=prefix+v.toLocaleString('es-MX',{minimumFractionDigits:dec,maximumFractionDigits:dec})+suffix;
+    if(k<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+}
+
+Chart.defaults.color=C.tx2;Chart.defaults.font.family='Inter,sans-serif';Chart.defaults.font.size=10;
+const TT={backgroundColor:'rgba(8,12,21,.95)',borderColor:'rgba(255,255,255,.12)',borderWidth:1,padding:10,cornerRadius:8,titleColor:C.tx,bodyColor:C.tx2,titleFont:{family:'Inter',weight:'600',size:11},bodyFont:{family:'JetBrains Mono',size:11},displayColors:false};
+
+const hoyLine={id:'hoyLine',afterDraw(ch){
+  if(!ch.scales.x)return;const x=ch.scales.x.getPixelForValue(HOY_IDX),c=ch.ctx,a=ch.chartArea;
+  c.save();c.strokeStyle=C.gold;c.lineWidth=1.2;c.setLineDash([3,3]);
+  c.beginPath();c.moveTo(x,a.top);c.lineTo(x,a.bottom);c.stroke();c.setLineDash([]);
+  c.fillStyle=C.gold;c.font='600 9px Inter';c.fillText('HOY',x+4,a.top+11);c.restore();
+}};
+
+let charts={};
+function destroy(){Object.values(charts).forEach(c=>c&&c.destroy());charts={};}
+function rangeTicks(){return{ticks:{font:tf,maxRotation:0,autoSkip:true,maxTicksLimit:9,color:C.tx3},grid:{display:false}};}
+
+/* ════════ RENDER ════════ */
+function render(){
+  destroy();
+  const D=derived();
+
+  document.getElementById('badge-hoy').textContent=LABELS[HOY_IDX];
+  const pct=Math.round(HOY_IDX/24*100);
+  const onTrack=HOY_HEROES>=(HEROES[HOY_IDX]||0)-1;
+  const led=document.getElementById('status-led'),strip=document.getElementById('status-strip'),verd=document.getElementById('status-verd');
+  const col=onTrack?C.pos:C.warn;
+  led.style.background=col;led.style.boxShadow=`0 0 14px ${col},0 0 0 4px ${onTrack?'var(--pos-bg)':'var(--warn-bg)'}`;
+  strip.style.borderLeftColor=col;
+  verd.textContent=onTrack?'EN RUTA':'VIGILAR';verd.style.color=col;
+  document.getElementById('status-msg').innerHTML=`<b>${HOY_HEROES} héroes</b> y <b>${HOY_CUOTAS} cuotas equivalentes</b> a ${HOY_IDX} meses del arranque. `+
+    `El modelo cruza a <b>EBITDA positivo en ${LABELS[D.fp]}</b>.`;
+  const pctEl=document.getElementById('status-pct');animateVal(pctEl,pct,{suffix:'%'});
+
+  /* ── KPIs ── */
+  const cobro=Math.round(HOY_CUOTAS/HOY_HEROES*100);
+  const cards=[
+    {acc:'blue',lbl:'Héroes activos',val:HOY_HEROES,dec:0,delta:'+50% año 1',dcls:'d-pos',sub:`${Math.round(HOY_HEROES/CAP*100)}% de ${CAP} plazas · meta ${HEROES[24]}`,spark:spark(HEROES.map((v,i)=>i<=REALES?v:null),{color:C.blue,today:HOY_IDX})},
+    {acc:'pos',lbl:'Tasa de cobro',val:cobro,dec:0,suffix:'%',delta:`${HOY_CUOTAS}/${HOY_HEROES} eq.`,dcls:'d-neu',sub:`${HOY_HEROES-Math.round(HOY_CUOTAS)} héroes con beca o descuento`,spark:spark(CUOTAS.map((v,i)=>i<=REALES?Math.round(v/HEROES[i]*100):null),{color:C.pos,today:HOY_IDX})},
+    {acc:'viol',lbl:'Cuotas completas',val:HOY_CUOTAS,dec:1,delta:'Equivalentes',dcls:'d-pos',sub:`Meta al equilibrio: ${CUOTAS[24]} cuotas`,spark:spark(CUOTAS.map((v,i)=>i<=REALES?v:null),{color:C.viol,today:HOY_IDX})},
+    {acc:'gold',lbl:'Ticket promedio',val:HOY_TICKET,dec:0,prefix:'$',delta:'Actual MXN',dcls:'d-neu',sub:`Costo proyectado del ciclo: ${fmt(TICKET[HOY_IDX])}`,spark:spark(TICKET.map((v,i)=>i<=REALES?v:null),{color:C.gold,today:HOY_IDX})},
+    {acc:'pos',lbl:'Punto de equilibrio',valTxt:LABELS[D.fp],delta:`${D.fp-HOY_IDX} meses`,dcls:'d-pos',sub:`Matrícula requerida: ${HEROES[D.fp]} héroes`,spark:spark(D.eb.map((v,i)=>i<=REALES?v:null),{color:C.pos,zero:true,today:HOY_IDX})}
+  ];
+  const grid=document.getElementById('kpi-grid');grid.innerHTML='';
+  cards.forEach(c=>{
+    const el=document.createElement('div');el.className='kpi accent-'+c.acc;
+    el.innerHTML=`<div class="top"><span class="lbl">${c.lbl}</span><span class="delta ${c.dcls}">${c.delta}</span></div><div class="val" data-v="${c.val??''}"></div><div class="sub">${c.sub}</div><div class="spark">${c.spark}</div>`;
+    grid.appendChild(el);
+    const v=el.querySelector('.val');
+    if(c.valTxt!=null)v.textContent=c.valTxt;
+    else animateVal(v,c.val,{prefix:c.prefix||'',suffix:c.suffix||'',dec:c.dec||0});
+  });
+
+  /* ── TIMELINE ── */
+  document.getElementById('tl-fill').style.width=pct+'%';
+  document.getElementById('tl-dot').style.left=pct+'%';
+  document.getElementById('tl-now').textContent=`Hoy · ${LABELS[HOY_IDX]} · ${HOY_HEROES} héroes`;
+  document.getElementById('tl-insight').innerHTML=`<b>${pct}% del camino recorrido.</b> El ritmo de altas reales sostiene la trayectoria; los dos saltos de matrícula que faltan se concentran en los arranques de ciclo escolar.`;
+
+  /* ── BRECHA DE BECAS (GRÁFICA) ── */
+  charts.becas = new Chart(document.getElementById('becasChart'), {
+    type: 'bar',
+    data: {
+      labels: LABELS,
+      datasets: [
+        { label: 'Héroes', data: HEROES, backgroundColor: C.blue, borderRadius: 2, maxBarThickness: 12 },
+        { label: 'Cuotas', data: CUOTAS, backgroundColor: C.pos, borderRadius: 2, maxBarThickness: 12 }
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: true, labels: { color: C.tx2, font: { size: 9 } } }, tooltip: { ...TT, mode: 'index', intersect: false } },
+      scales: { x: rangeTicks(), y: { grid: { color: C.grid }, ticks: { color: C.tx3, font: tf } } }
+    },
+    plugins: [hoyLine]
+  });
+  document.getElementById('becas-insight').innerHTML = `La brecha entre héroes reales y cuotas equivalentes muestra el <b>volumen de becas y subsidios</b> aplicados a lo largo del periodo.`;
+
+  /* ── COBRO ── */
+  document.getElementById('coll-pct').textContent=cobro+'%';
+  document.getElementById('coll-seg').style.width=cobro+'%';
+  document.getElementById('coll-seg').textContent=cobro+'%';
+  document.getElementById('coll-insight').innerHTML=`<b>${100-cobro} puntos</b> de ingreso quedan sobre la mesa. Recuperar cobro adelanta el equilibrio sin sumar un solo héroe.`;
+
+  /* ── MONITOS ── */
+  const hg=document.getElementById('hgrid');hg.innerHTML='';
+  COMPLETAS.forEach(n=>{const d=document.createElement('div');d.className='h-item t-full';d.innerHTML=svgPerson('rgba(63,216,155,.18)',C.pos)+`<span class="hn">${n}</span><span class="hp">100%</span>`;hg.appendChild(d);});
+  PARCIALES.forEach(h=>{const d=document.createElement('div');d.className='h-item t-part';d.innerHTML=svgPerson('rgba(244,183,64,.18)',C.warn)+`<span class="hn">${h.n}</span><span class="hp">${h.p}%</span>`;hg.appendChild(d);});
+  BECAS.forEach(n=>{const d=document.createElement('div');d.className='h-item t-beca';d.innerHTML=svgPerson('rgba(255,107,107,.18)',C.neg)+`<span class="hn">${n}</span><span class="hp">beca</span>`;hg.appendChild(d);});
+  const libres=Math.max(0,CAP-HOY_HEROES);
+  for(let i=0;i<libres;i++){const d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;width:26px;opacity:.3';d.innerHTML=svgPerson('none','#5A6379',1,17);hg.appendChild(d);}
+  document.getElementById('heroes-insight').innerHTML=`Equivalente de cuotas: <b>${HOY_CUOTAS}</b> de <b>${HOY_HEROES}</b> héroes pagan precio pleno. Quedan <b>${libres}</b> plazas de <b>${CAP}</b>.`;
+
+  /* ── EQ TABLE ── */
+  const per=[{l:'Hoy ('+LABELS[HOY_IDX]+')',i:HOY_IDX,now:true},{l:"Sep'26",i:12},{l:"Ene'27",i:16},{l:"Sep'27",i:24}];
+  const tb=document.getElementById('eq-tbody');tb.innerHTML='';
+  per.forEach(p=>{const g=GASTOS[p.i],t=TICKET[p.i],h=HEROES[p.i],nec=Math.ceil(g/t),ok=h>=nec;
+    const tr=document.createElement('tr');tr.className=p.now?'now':(ok?'ok':'');
+    tr.innerHTML=`<td>${p.l}${p.now?' ←':''}</td><td style="text-align:right" class="mono"><b>${nec}</b></td><td style="text-align:right">${ok?'✅':'−'+(nec-h)}</td>`;
+    tb.appendChild(tr);});
+
+  /* ── COST CLIFF ── */
+  const jump=Math.round((GASTOS[12]/GASTOS[11]-1)*100);
+  document.getElementById('cliff-body').innerHTML=`El salto de gastos en <b>Sep'26</b> es del <b>+${jump}%</b>. La quema se <b>profundiza a ${fmtK(INGRESOS[12]-GASTOS[12])}</b> antes de estabilizarse.`;
+
+  /* ════ CHARTS ANALÍTICOS ════ */
+  const mkLine=(arr,col,fillBg)=>({real:{data:arr.map((v,i)=>i<=REALES?v:null),borderColor:col,backgroundColor:fillBg,fill:!!fillBg,tension:.32,borderWidth:2.4,pointRadius:0,pointHoverRadius:4},proj:{data:arr.map((v,i)=>i>=REALES?v:null),borderColor:col,borderDash:[5,4],backgroundColor:'transparent',tension:.32,borderWidth:1.6,pointRadius:0,pointHoverRadius:4}});
+  const ig=mkLine(INGRESOS,C.pos,'rgba(63,216,155,.08)'),gg=mkLine(GASTOS,C.neg,'rgba(255,107,107,.06)');
+  charts.ingGas=new Chart(document.getElementById('ingGasChart'),{type:'line',data:{labels:LABELS,datasets:[{...ig.real,label:'Ingresos'},{...ig.proj,label:'Ingresos proy.'},{...gg.real,label:'Gastos'},{...gg.proj,label:'Gastos proy.'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,mode:'index',intersect:false,callbacks:{title:c=>LABELS[c[0].dataIndex],label:c=>c.parsed.y!=null?c.dataset.label.replace(' proy.','')+': '+fmt(c.parsed.y):null}}},scales:{x:rangeTicks(),y:{ticks:{font:tf,color:C.tx3,callback:v=>fmtK(v)},grid:{color:C.grid}}}},plugins:[hoyLine]});
+  document.getElementById('ig-insight').innerHTML=`El <b>cruce ocurre en ${LABELS[D.fp]}</b>.`;
+  const ebCol=D.eb.map((v,i)=>v>=0?(i<=REALES?C.pos:'rgba(63,216,155,.45)'):(i<=REALES?C.neg:'rgba(255,107,107,.42)'));
+  charts.ebitda=new Chart(document.getElementById('ebitdaChart'),{type:'bar',data:{labels:LABELS,datasets:[{data:D.eb,backgroundColor:ebCol,borderRadius:3,maxBarThickness:20}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>LABELS[c[0].dataIndex],label:c=>'EBITDA: '+fmt(c.parsed.y)}}},scales:{x:rangeTicks(),y:{ticks:{font:tf,color:C.tx3,callback:v=>fmtK(v)},grid:{color:C.grid}}}},plugins:[hoyLine]});
+  document.getElementById('eb-insight').innerHTML=`Primer mes en verde: <b>${LABELS[D.fp]}</b>.`;
+  const dl=(arr,col,axis)=>([{data:arr.map((v,i)=>i<=REALES?v:null),borderColor:col,backgroundColor:'transparent',tension:.32,pointRadius:0,pointHoverRadius:4,borderWidth:2.4,yAxisID:axis},{data:arr.map((v,i)=>i>=REALES?v:null),borderColor:col,borderDash:[5,4],backgroundColor:'transparent',tension:.32,pointRadius:0,pointHoverRadius:4,borderWidth:1.6,yAxisID:axis}]);
+  charts.evol=new Chart(document.getElementById('evolChart'),{type:'line',data:{labels:LABELS,datasets:[...dl(HEROES,C.blue,'y1'),...dl(TICKET,C.viol,'y2')]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,mode:'index',intersect:false,callbacks:{title:c=>LABELS[c[0].dataIndex],label:c=>{if(c.parsed.y==null)return null;return c.dataset.yAxisID==='y1'?'Héroes: '+c.parsed.y:'Ticket: '+fmt(c.parsed.y);}}}},scales:{x:rangeTicks(),y1:{position:'left',ticks:{font:tf,color:C.tx3,callback:v=>v+'h'},grid:{color:C.grid}},y2:{position:'right',ticks:{font:tf,color:C.tx3,callback:v=>fmtK(v)},grid:{display:false}}}},plugins:[hoyLine]});
+  document.getElementById('ev-insight').innerHTML=`Año 1: héroes <b>+50%</b> · ticket <b>+54%</b>.`;
+  const nCol=NUEVOS.map((_,i)=>i<=REALES?C.blue:'rgba(91,155,255,.4)');
+  charts.nuevos=new Chart(document.getElementById('nuevosChart'),{type:'bar',data:{labels:LABELS,datasets:[{data:NUEVOS,backgroundColor:nCol,borderRadius:3,maxBarThickness:20}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false},tooltip:{...TT,callbacks:{title:c=>LABELS[c[0].dataIndex],label:c=>'+'+c.parsed.y+' héroes'}}},scales:{x:rangeTicks(),y:{ticks:{font:tf,color:C.tx3,stepSize:2},grid:{color:C.grid}}}},plugins:[hoyLine]});
+  document.getElementById('nv-insight').innerHTML=`El <b>80% de las altas</b> se concentran en los arranques de ciclo.`;
+}
+
+function showPage(id,tab){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');
+  window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
+  if(id==='editar')poblar();
+}
+function poblar(){
+  const S=(id,v)=>document.getElementById(id).value=v;
+  S('in-heroes',HOY_HEROES);S('in-cuotas',HOY_CUOTAS);S('in-ticket',HOY_TICKET);S('in-mes',HOY_IDX);
+  S('in-reales',REALES);S('in-cap',CAP);
+  S('in-nc',COMPLETAS.join(', '));S('in-np',PARCIALES.map(h=>h.n+':'+h.p).join(', '));S('in-nb',BECAS.join(', '));
+  S('in-ah',HEROES.join(', '));S('in-ac',CUOTAS.join(', '));S('in-an',NUEVOS.join(', '));
+  S('in-ai',INGRESOS.join(', '));S('in-ag',GASTOS.join(', '));S('in-at',TICKET.join(', '));
+}
+const arr=id=>document.getElementById(id).value.split(',').map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
+const names=id=>document.getElementById(id).value.split(',').map(v=>v.trim()).filter(Boolean);
+function guardar(){
+  const num=(id,d)=>{const v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v;};
+  HOY_HEROES=num('in-heroes',HOY_HEROES);HOY_CUOTAS=num('in-cuotas',HOY_CUOTAS);HOY_TICKET=num('in-ticket',HOY_TICKET);
+  HOY_IDX=Math.max(0,Math.min(24,Math.round(num('in-mes',HOY_IDX))));
+  REALES=Math.max(0,Math.min(24,Math.round(num('in-reales',REALES))));CAP=num('in-cap',CAP);
+  const nc=names('in-nc');if(nc.length)COMPLETAS=nc;
+  const nb=names('in-nb');if(nb.length)BECAS=nb;
+  const np=document.getElementById('in-np').value.split(',').map(v=>{const[a,b]=v.split(':');return a&&b?{n:a.trim(),p:parseFloat(b)}:null;}).filter(Boolean);
+  if(np.length)PARCIALES=np;
+  const set=(id,t)=>{const a=arr(id);if(a.length===25)t.splice(0,25,...a);};
+  set('in-ah',HEROES);set('in-ac',CUOTAS);set('in-an',NUEVOS);set('in-ai',INGRESOS);set('in-ag',GASTOS);set('in-at',TICKET);
+  render();
+  const st=document.getElementById('ep-status');st.classList.add('show');setTimeout(()=>st.classList.remove('show'),2400);
+}
+render();
+</script>
+</body>
+</html>
