@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Acton Academy · Camino al equilibrio</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Space+Grotesk:wght@500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
 
@@ -209,6 +210,26 @@ body{
 .epstat{font-size:.76rem;color:var(--pos);font-weight:600;opacity:0;transition:opacity .25s}
 .epstat.show{opacity:1}
 
+/* edit tables */
+.tbl-scroll{overflow-x:auto}
+.etbl{width:100%;border-collapse:collapse;font-size:.75rem;margin-top:.3rem}
+.etbl th{font-size:.6rem;text-transform:uppercase;letter-spacing:.05em;color:var(--tx-3);padding:.45rem .5rem;text-align:left;border-bottom:1px solid var(--line);font-weight:600;white-space:nowrap}
+.etbl td{padding:.3rem .4rem;border-bottom:1px solid var(--line-2);vertical-align:middle;white-space:nowrap}
+.etbl input,.etbl select{width:100%;min-width:70px;padding:.4rem .5rem;border:1px solid var(--line);border-radius:var(--r-s);background:var(--ink-2);color:var(--tx);font-family:'JetBrains Mono';font-size:.74rem}
+.etbl input.nm{font-family:'Inter';min-width:130px}
+.etbl input:focus,.etbl select:focus{outline:none;border-color:var(--blue);background:var(--ink)}
+.etbl select{cursor:pointer}
+.etbl .del{width:auto;min-width:0;background:var(--neg-bg);color:var(--neg);border:1px solid rgba(255,107,107,.3);border-radius:6px;cursor:pointer;padding:.3rem .55rem;font-size:.78rem;line-height:1;font-weight:700}
+.etbl .del:hover{background:rgba(255,107,107,.2)}
+.col-narrow{width:80px}.col-mid{width:118px}
+.mtbl-wrap{max-height:430px;overflow-y:auto;border:1px solid var(--line);border-radius:var(--r-s);margin-top:.3rem}
+.mtbl-wrap .etbl{margin-top:0}
+.mtbl-wrap th{position:sticky;top:0;background:var(--surf);z-index:1}
+.addbtn{margin-top:.7rem;background:rgba(91,155,255,.12);color:var(--blue);border:1px solid rgba(91,155,255,.28);border-radius:var(--r-s);padding:.5rem 1rem;font-size:.76rem;font-weight:600;cursor:pointer;font-family:inherit}
+.addbtn:hover{background:rgba(91,155,255,.2)}
+.hint{font-size:.68rem;color:var(--tx-3);margin-top:.55rem;line-height:1.6}
+.hint b{color:var(--tx-2)}
+
 .foot{text-align:center;font-size:.68rem;color:var(--tx-3);margin-top:2.4rem;padding-bottom:1rem;line-height:1.7}
 .foot b{color:var(--tx-2)}
 
@@ -411,39 +432,75 @@ body{
 </div>
 
 <div class="page" id="page-editar">
-  <div class="ep-note">Edita cualquier valor y presiona <b>Guardar y actualizar</b>. Los arrays llevan 25 valores separados por coma (Sep'25 → Sep'27). Todo el tablero — KPIs, equilibrio y gráficos — se recalcula al instante.</div>
+  <div class="ep-note">Todo el tablero se calcula a partir de esta pestaña. Edita la <b>tabla de héroes</b>, el <b>valor de la cuota completa</b> y los <b>ingresos y gastos por mes</b>; el resto (héroes activos, cuotas equivalentes, altas, ticket, KPIs y gráficos) se recalcula solo al presionar <b>Guardar y actualizar</b>.</div>
 
-  <div class="eps">
-    <div class="epst">Situación actual (actualiza cada mes)</div>
-    <div class="epg">
-      <div class="epf"><label>Héroes activos hoy</label><input type="number" id="in-heroes" step="1"></div>
-      <div class="epf"><label>Cuotas completas equiv. hoy</label><input type="number" id="in-cuotas" step="0.1"></div>
-      <div class="epf"><label>Ticket promedio hoy (MXN)</label><input type="number" id="in-ticket" step="1"></div>
-      <div class="epf"><label>Mes actual (0=Sep'25 … 24=Sep'27)</label><input type="number" id="in-mes" step="1" min="0" max="24"></div>
-      <div class="epf"><label>Meses reales hasta índice (9=Jun'26)</label><input type="number" id="in-reales" step="1" min="0" max="24"></div>
-      <div class="epf"><label>Capacidad total de héroes</label><input type="number" id="in-cap" step="1"></div>
+  <div class="eps" id="auth-box">
+    <div id="auth-out">
+      <div class="epst">Inicia sesión para editar</div>
+      <div class="epg" style="max-width:440px">
+        <div class="epf"><label>Correo</label><input type="email" id="au-email" autocomplete="username"></div>
+        <div class="epf"><label>Contraseña</label><input type="password" id="au-pass" autocomplete="current-password"></div>
+      </div>
+      <div class="epbtns">
+        <button class="btn pri" onclick="doLogin()">Iniciar sesión</button>
+        <span id="au-msg" style="color:var(--neg);font-size:.76rem;font-weight:600"></span>
+      </div>
+      <div class="hint">Solo editores con cuenta pueden guardar. El tablero es visible para todos sin iniciar sesión.</div>
+    </div>
+    <div id="auth-in" style="display:none">
+      <div class="epst" style="display:flex;align-items:center;gap:.7rem;flex-wrap:wrap">
+        <span>Sesión iniciada · <b id="au-who" style="color:var(--pos)"></b></span>
+        <button class="btn sec" style="padding:.35rem .9rem" onclick="doLogout()">Cerrar sesión</button>
+      </div>
     </div>
   </div>
 
+  <div id="editor-body">
   <div class="eps">
-    <div class="epst">Héroes nombrados</div>
-    <div class="epg">
-      <div class="epf full"><label>Cuota 100% — nombres separados por coma</label><input class="nm-in" type="text" id="in-nc"></div>
-      <div class="epf full"><label>Cuota parcial — formato Nombre:porcentaje (ej. Sebastian:50, JP:65)</label><input class="nm-in" type="text" id="in-np"></div>
-      <div class="epf full"><label>Beca 100% — nombres separados por coma</label><input class="nm-in" type="text" id="in-nb"></div>
+    <div class="epst">Héroes — agrega, edita o da de baja</div>
+    <div class="tbl-scroll">
+      <table class="etbl" id="hero-tbl">
+        <thead><tr>
+          <th>Nombre</th><th class="col-narrow">% cuota</th><th class="col-narrow">Nº</th>
+          <th class="col-mid">Mes inicio</th><th class="col-mid">Mes baja</th><th></th>
+        </tr></thead>
+        <tbody id="hero-tbody"></tbody>
+      </table>
     </div>
+    <button class="addbtn" onclick="addHeroRow()">+ Agregar héroe</button>
+    <div class="hint"><b>% cuota:</b> 100 = cuota completa · 1–99 = parcial · 0 = beca. &nbsp;&nbsp; <b>Nº:</b> 1 para una persona, o más para un grupo proyectado (ej. “Nuevos Sep'26”, Nº 6). &nbsp;&nbsp; <b>Mes baja</b> vacío = sigue activo.</div>
   </div>
 
   <div class="eps">
-    <div class="epst">Arrays de proyección — 25 valores (Sep'25 → Sep'27)</div>
-    <div class="epg" style="grid-template-columns:1fr">
-      <div class="epf"><label>Héroes activos</label><textarea id="in-ah"></textarea></div>
-      <div class="epf"><label>Cuotas completas equivalentes</label><textarea id="in-ac"></textarea></div>
-      <div class="epf"><label>Altas (nuevos héroes) por mes</label><textarea id="in-an"></textarea></div>
-      <div class="epf"><label>Ingresos mensuales (MXN)</label><textarea id="in-ai"></textarea></div>
-      <div class="epf"><label>Gastos mensuales (MXN)</label><textarea id="in-ag"></textarea></div>
-      <div class="epf"><label>Ticket promedio mensual (MXN)</label><textarea id="in-at"></textarea></div>
+    <div class="epst">Valor de la cuota completa (por ciclo)</div>
+    <div class="tbl-scroll">
+      <table class="etbl" id="q-tbl" style="max-width:440px">
+        <thead><tr><th class="col-mid">Desde el mes</th><th>Vale (MXN)</th><th></th></tr></thead>
+        <tbody id="q-tbody"></tbody>
+      </table>
     </div>
+    <button class="addbtn" onclick="addQuotaRow()">+ Agregar cambio de precio</button>
+    <div class="hint">Lo que cuesta un héroe al 100%. Cada fila fija el precio desde ese mes en adelante, hasta el siguiente cambio.</div>
+  </div>
+
+  <div class="eps">
+    <div class="epst">Ajustes generales</div>
+    <div class="epg">
+      <div class="epf"><label>Mes actual (“hoy”)</label><select id="in-mes"></select></div>
+      <div class="epf"><label>Capacidad total de plazas</label><input type="number" id="in-cap" step="1"></div>
+    </div>
+    <div class="hint">Todo lo anterior a “hoy” se muestra como dato real; lo posterior, como proyección (línea punteada).</div>
+  </div>
+
+  <div class="eps">
+    <div class="epst">Ingresos y gastos por mes (MXN)</div>
+    <div class="mtbl-wrap tbl-scroll">
+      <table class="etbl" id="m-tbl">
+        <thead><tr><th>Mes</th><th>Ingresos</th><th>Gastos</th></tr></thead>
+        <tbody id="m-tbody"></tbody>
+      </table>
+    </div>
+    <div class="hint">El dinero que entra y sale cada mes. Incluye inscripciones u otros ingresos, no solo las cuotas.</div>
   </div>
 
   <div class="epbtns">
@@ -451,23 +508,128 @@ body{
     <button class="btn sec" onclick="poblar()">Descartar cambios</button>
     <span class="epstat" id="ep-status">✓ Tablero actualizado</span>
   </div>
+  </div><!-- /editor-body -->
 </div>
 
 <script>
-/* ════════ DATOS EDITABLES ════════ */
-let HOY_HEROES = 9, HOY_CUOTAS = 5.3, HOY_TICKET = 4231, HOY_IDX = 9, REALES = 9, CAP = 80;
-
-let COMPLETAS = ["Jimena","Carmen Sofía","Julia"];
-let PARCIALES = [{n:"Sebastian Barba",p:50},{n:"Matías",p:50},{n:"JP",p:65},{n:"Sebastian",p:65}];
-let BECAS = ["Samuel","Juan Enrique"];
-
+/* ════════ MODELO EDITABLE ════════ */
 let LABELS=["Sep'25","Oct","Nov","Dic","Ene'26","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep'26","Oct","Nov","Dic","Ene'27","Feb","Mar","Abr","May","Jun","Jul","Ago","Sep'27"];
-let HEROES=[6,8,8,8,8,8,8,8,8,9,9,9,13,19,19,19,19,19,19,21,21,21,25,31,39];
-let CUOTAS=[2.3,4.3,4.3,4.3,4.3,4.3,4.3,4.3,4.3,5.3,5.3,5.3,7.35,13.35,13.35,13.35,13.35,13.35,13.35,15.35,15.35,15.35,19.35,25.35,33.35];
-let NUEVOS=[6,2,0,0,0,0,0,0,0,1,0,0,4,6,0,0,0,0,0,2,0,0,4,6,8];
+let HOY_IDX=9, CAP=80;
+
+/* Cada fila = un héroe (Nº:1) o un grupo proyectado (Nº>1). end=null → sigue activo */
+let ROWS=[
+  {name:"Sebastian Barba",count:1,pct:50,start:0,end:null},
+  {name:"Matías",count:1,pct:50,start:0,end:null},
+  {name:"JP",count:1,pct:65,start:0,end:null},
+  {name:"Sebastian",count:1,pct:65,start:0,end:null},
+  {name:"Samuel",count:1,pct:0,start:0,end:null},
+  {name:"Juan Enrique",count:1,pct:0,start:0,end:null},
+  {name:"Jimena",count:1,pct:100,start:1,end:null},
+  {name:"Carmen Sofía",count:1,pct:100,start:1,end:null},
+  {name:"Julia",count:1,pct:100,start:9,end:null},
+  {name:"Nuevos Sep'26",count:4,pct:51.25,start:12,end:null},
+  {name:"Nuevos Oct'26",count:6,pct:100,start:13,end:null},
+  {name:"Nuevos Abr'27",count:2,pct:100,start:19,end:null},
+  {name:"Nuevos Jul'27",count:4,pct:100,start:22,end:null},
+  {name:"Nuevos Ago'27",count:6,pct:100,start:23,end:null},
+  {name:"Nuevos Sep'27",count:8,pct:100,start:24,end:null}
+];
+
+/* Valor de la cuota completa por ciclo: {from:idx del mes, val:MXN} */
+let QUOTA=[{from:0,val:7184},{from:12,val:10000},{from:24,val:10587}];
+
 let INGRESOS=[16523,30891,30891,30891,30891,30891,30891,30891,30891,39075,39075,39075,110500,184000,134500,134500,134500,134500,134500,162000,154500,154500,200500,259000,423175];
 let GASTOS=[81648,81648,81648,81648,81648,81648,81648,81648,81648,86648,86648,86648,219768,225768,207768,207768,207768,207768,207768,213768,207768,207768,219768,225768,371975];
-let TICKET=[2754,3861,3861,3861,3861,3861,3861,3861,3861,4231,4231,4231,5654,7026,7026,7026,7026,7026,7026,7310,7310,7310,7740,8177,9053];
+
+/* ── Derivados (se recalculan solos desde ROWS + QUOTA) ── */
+let HEROES=[],CUOTAS=[],NUEVOS=[],TICKET=[],REALES=9,HOY_HEROES=0,HOY_CUOTAS=0,HOY_TICKET=0;
+function qvAt(m){let v=QUOTA.length?QUOTA[0].val:0;for(const q of QUOTA){if(q.from<=m)v=q.val;}return v;}
+function recompute(){
+  HEROES=[];CUOTAS=[];NUEVOS=[];TICKET=[];
+  for(let m=0;m<25;m++){
+    let h=0,c=0,nu=0;
+    for(const r of ROWS){
+      const end=(r.end==null)?24:r.end;
+      if(r.start<=m&&m<=end){h+=r.count;c+=r.count*r.pct/100;}
+      if(r.start===m)nu+=r.count;
+    }
+    HEROES.push(h);CUOTAS.push(Math.round(c*100)/100);NUEVOS.push(nu);
+    TICKET.push(h>0?Math.round(c*qvAt(m)/h):0);
+  }
+  REALES=HOY_IDX;
+  HOY_HEROES=HEROES[HOY_IDX];HOY_CUOTAS=CUOTAS[HOY_IDX];HOY_TICKET=TICKET[HOY_IDX];
+}
+
+/* ════════ SUPABASE / NUBE ════════
+   1) Pega abajo la URL y la clave anon de tu proyecto (Supabase → Project Settings → API → Project URL / anon public).
+   2) Corre en Supabase → SQL Editor el script del archivo SUPABASE_SETUP.sql (crea la tabla y las reglas).
+   3) Crea tu usuario editor en Supabase → Authentication → Users → Add user (email + contraseña).
+   Mientras estos valores sigan en blanco, el tablero funciona en "modo local" (los cambios no se guardan al recargar). */
+const SUPABASE_URL='https://zvxetuorprfltaisutes.supabase.co';
+const SUPABASE_ANON_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2eGV0dW9ycHJmbHRhaXN1dGVzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODQ3NDIxOTUsImV4cCI6MjEwMDMxODE5NX0.t8zy3GlwFOe9p9rSobyhfbGRQXDjARkab_BZYxAUwko';
+const CLOUD_ON = /^https:\/\//.test(SUPABASE_URL) && SUPABASE_ANON_KEY.length>20 && !!window.supabase;
+let sb=null, currentUser=null;
+if(CLOUD_ON) sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_ANON_KEY);
+
+function serializeState(){return {rows:ROWS,quota:QUOTA,ingresos:INGRESOS,gastos:GASTOS,hoy_idx:HOY_IDX,cap:CAP,labels:LABELS};}
+function applyState(s){
+  if(!s)return;
+  if(Array.isArray(s.rows))ROWS=s.rows;
+  if(Array.isArray(s.quota))QUOTA=s.quota;
+  if(Array.isArray(s.ingresos))INGRESOS=s.ingresos;
+  if(Array.isArray(s.gastos))GASTOS=s.gastos;
+  if(typeof s.hoy_idx==='number')HOY_IDX=s.hoy_idx;
+  if(typeof s.cap==='number')CAP=s.cap;
+  if(Array.isArray(s.labels)&&s.labels.length===25)LABELS=s.labels;
+}
+async function cloudLoad(){
+  if(!CLOUD_ON)return false;
+  try{
+    const {data,error}=await sb.from('dashboard_state').select('data').eq('id',1).maybeSingle();
+    if(error){console.warn('cloudLoad:',error.message);return false;}
+    if(data&&data.data){applyState(data.data);return true;}
+  }catch(e){console.warn(e);}
+  return false;
+}
+async function cloudSave(){
+  if(!CLOUD_ON)return {ok:false,msg:'local'};
+  try{
+    const {error}=await sb.from('dashboard_state').upsert({id:1,data:serializeState(),updated_at:new Date().toISOString()});
+    if(error)return {ok:false,msg:error.message};
+    return {ok:true};
+  }catch(e){return {ok:false,msg:String(e)};}
+}
+async function refreshAuth(){
+  if(!CLOUD_ON){currentUser=null;return;}
+  try{const {data}=await sb.auth.getSession();currentUser=data.session?data.session.user:null;}
+  catch(e){currentUser=null;}
+}
+function updateAuthUI(){
+  const box=document.getElementById('auth-box'),body=document.getElementById('editor-body');
+  if(!box||!body)return;
+  const out=document.getElementById('auth-out'),inn=document.getElementById('auth-in');
+  if(!CLOUD_ON){ // modo local: edición libre, sin login
+    out.style.display='none';inn.style.display='block';body.style.display='';
+    document.getElementById('au-who').textContent='modo local (sin nube configurada)';
+    return;
+  }
+  const logged=!!currentUser;
+  out.style.display=logged?'none':'block';
+  inn.style.display=logged?'block':'none';
+  body.style.display=logged?'':'none';
+  if(logged)document.getElementById('au-who').textContent=currentUser.email||'editor';
+}
+async function doLogin(){
+  const email=document.getElementById('au-email').value.trim();
+  const pass=document.getElementById('au-pass').value;
+  const msg=document.getElementById('au-msg');msg.textContent='';
+  if(!sb){msg.textContent='✕ Nube no configurada';return;}
+  const {error}=await sb.auth.signInWithPassword({email,password:pass});
+  if(error){msg.textContent='✕ '+error.message;return;}
+  document.getElementById('au-pass').value='';
+  await cloudLoad();await refreshAuth();updateAuthUI();render();poblar();
+}
+async function doLogout(){if(sb)await sb.auth.signOut();await refreshAuth();updateAuthUI();}
 
 /* ════════ HELPERS ════════ */
 const C={tx:'#EAEDF4',tx2:'#8C95AB',tx3:'#5A6379',pos:'#3FD89B',posD:'#1E9E72',neg:'#FF6B6B',warn:'#F4B740',blue:'#5B9BFF',viol:'#9B8CFF',grid:'rgba(255,255,255,.055)',gold:'#C9A24B'};
@@ -534,6 +696,7 @@ function rangeTicks(){return{ticks:{font:tf,maxRotation:0,autoSkip:true,maxTicks
 
 /* ════════ RENDER ════════ */
 function render(){
+  recompute();
   destroy();
   const D=derived();
 
@@ -601,9 +764,20 @@ function render(){
 
   /* ── MONITOS ── */
   const hg=document.getElementById('hgrid');hg.innerHTML='';
-  COMPLETAS.forEach(n=>{const d=document.createElement('div');d.className='h-item t-full';d.innerHTML=svgPerson('rgba(63,216,155,.18)',C.pos)+`<span class="hn">${n}</span><span class="hp">100%</span>`;hg.appendChild(d);});
-  PARCIALES.forEach(h=>{const d=document.createElement('div');d.className='h-item t-part';d.innerHTML=svgPerson('rgba(244,183,64,.18)',C.warn)+`<span class="hn">${h.n}</span><span class="hp">${h.p}%</span>`;hg.appendChild(d);});
-  BECAS.forEach(n=>{const d=document.createElement('div');d.className='h-item t-beca';d.innerHTML=svgPerson('rgba(255,107,107,.18)',C.neg)+`<span class="hn">${n}</span><span class="hp">beca</span>`;hg.appendChild(d);});
+  const activos=ROWS.filter(r=>{const e=(r.end==null)?24:r.end;return r.start<=HOY_IDX&&HOY_IDX<=e;})
+                    .slice().sort((a,b)=>b.pct-a.pct);
+  activos.forEach(r=>{
+    let cls,fill,color,txt;
+    if(r.pct>=100){cls='t-full';color=C.pos;fill='rgba(63,216,155,.18)';txt='100%';}
+    else if(r.pct<=0){cls='t-beca';color=C.neg;fill='rgba(255,107,107,.18)';txt='beca';}
+    else{cls='t-part';color=C.warn;fill='rgba(244,183,64,.18)';txt=r.pct+'%';}
+    const nm=r.name||'Héroe';
+    for(let k=0;k<r.count;k++){
+      const d=document.createElement('div');d.className='h-item '+cls;
+      d.innerHTML=svgPerson(fill,color)+`<span class="hn">${nm}</span><span class="hp">${txt}</span>`;
+      hg.appendChild(d);
+    }
+  });
   const libres=Math.max(0,CAP-HOY_HEROES);
   for(let i=0;i<libres;i++){const d=document.createElement('div');d.style.cssText='display:flex;flex-direction:column;align-items:center;width:26px;opacity:.3';d.innerHTML=svgPerson('none','#5A6379',1,17);hg.appendChild(d);}
   document.getElementById('heroes-insight').innerHTML=`Equivalente de cuotas: <b>${HOY_CUOTAS}</b> de <b>${HOY_HEROES}</b> héroes pagan precio pleno. Quedan <b>${libres}</b> plazas de <b>${CAP}</b>.`;
@@ -641,33 +815,88 @@ function showPage(id,tab){
   document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');tab.classList.add('active');
   window.scrollTo({top:0,behavior:reduce?'auto':'smooth'});
-  if(id==='editar')poblar();
+  if(id==='editar'){poblar();updateAuthUI();}
+}
+function monthOpts(sel,empty){
+  let o=empty?`<option value=""${sel==null?' selected':''}>— activo —</option>`:'';
+  for(let i=0;i<25;i++)o+=`<option value="${i}"${sel===i?' selected':''}>${LABELS[i]}</option>`;
+  return o;
+}
+function esc(s){return String(s).replace(/&/g,'&amp;').replace(/"/g,'&quot;').replace(/</g,'&lt;');}
+function heroRowHTML(r){
+  return `<td><input class="nm h-name" type="text" value="${esc(r.name||'')}"></td>`+
+    `<td><input class="h-pct" type="number" step="1" value="${r.pct}"></td>`+
+    `<td><input class="h-count" type="number" step="1" min="1" value="${r.count}"></td>`+
+    `<td><select class="h-start">${monthOpts(r.start,false)}</select></td>`+
+    `<td><select class="h-end">${monthOpts(r.end==null?null:r.end,true)}</select></td>`+
+    `<td><button class="del" onclick="this.closest('tr').remove()" title="Eliminar">✕</button></td>`;
+}
+function addHeroRow(r){
+  r=r||{name:'',count:1,pct:100,start:HOY_IDX,end:null};
+  const tr=document.createElement('tr');tr.innerHTML=heroRowHTML(r);
+  document.getElementById('hero-tbody').appendChild(tr);
+}
+function quotaRowHTML(q){
+  return `<td><select class="q-from">${monthOpts(q.from,false)}</select></td>`+
+    `<td><input class="q-val" type="number" step="1" value="${q.val}"></td>`+
+    `<td><button class="del" onclick="this.closest('tr').remove()" title="Eliminar">✕</button></td>`;
+}
+function addQuotaRow(q){
+  q=q||{from:0,val:0};
+  const tr=document.createElement('tr');tr.innerHTML=quotaRowHTML(q);
+  document.getElementById('q-tbody').appendChild(tr);
 }
 function poblar(){
-  const S=(id,v)=>document.getElementById(id).value=v;
-  S('in-heroes',HOY_HEROES);S('in-cuotas',HOY_CUOTAS);S('in-ticket',HOY_TICKET);S('in-mes',HOY_IDX);
-  S('in-reales',REALES);S('in-cap',CAP);
-  S('in-nc',COMPLETAS.join(', '));S('in-np',PARCIALES.map(h=>h.n+':'+h.p).join(', '));S('in-nb',BECAS.join(', '));
-  S('in-ah',HEROES.join(', '));S('in-ac',CUOTAS.join(', '));S('in-an',NUEVOS.join(', '));
-  S('in-ai',INGRESOS.join(', '));S('in-ag',GASTOS.join(', '));S('in-at',TICKET.join(', '));
+  const ht=document.getElementById('hero-tbody');ht.innerHTML='';ROWS.forEach(r=>addHeroRow(r));
+  const qt=document.getElementById('q-tbody');qt.innerHTML='';QUOTA.forEach(q=>addQuotaRow(q));
+  document.getElementById('in-mes').innerHTML=monthOpts(HOY_IDX,false);
+  document.getElementById('in-cap').value=CAP;
+  const mt=document.getElementById('m-tbody');mt.innerHTML='';
+  for(let i=0;i<25;i++){
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td style="color:var(--tx-2)">${LABELS[i]}</td>`+
+      `<td><input class="m-ing" type="number" step="1" value="${INGRESOS[i]??0}"></td>`+
+      `<td><input class="m-gas" type="number" step="1" value="${GASTOS[i]??0}"></td>`;
+    mt.appendChild(tr);
+  }
 }
-const arr=id=>document.getElementById(id).value.split(',').map(v=>parseFloat(v.trim())).filter(v=>!isNaN(v));
-const names=id=>document.getElementById(id).value.split(',').map(v=>v.trim()).filter(Boolean);
-function guardar(){
-  const num=(id,d)=>{const v=parseFloat(document.getElementById(id).value);return isNaN(v)?d:v;};
-  HOY_HEROES=num('in-heroes',HOY_HEROES);HOY_CUOTAS=num('in-cuotas',HOY_CUOTAS);HOY_TICKET=num('in-ticket',HOY_TICKET);
-  HOY_IDX=Math.max(0,Math.min(24,Math.round(num('in-mes',HOY_IDX))));
-  REALES=Math.max(0,Math.min(24,Math.round(num('in-reales',REALES))));CAP=num('in-cap',CAP);
-  const nc=names('in-nc');if(nc.length)COMPLETAS=nc;
-  const nb=names('in-nb');if(nb.length)BECAS=nb;
-  const np=document.getElementById('in-np').value.split(',').map(v=>{const[a,b]=v.split(':');return a&&b?{n:a.trim(),p:parseFloat(b)}:null;}).filter(Boolean);
-  if(np.length)PARCIALES=np;
-  const set=(id,t)=>{const a=arr(id);if(a.length===25)t.splice(0,25,...a);};
-  set('in-ah',HEROES);set('in-ac',CUOTAS);set('in-an',NUEVOS);set('in-ai',INGRESOS);set('in-ag',GASTOS);set('in-at',TICKET);
+async function guardar(){
+  ROWS=[...document.querySelectorAll('#hero-tbody tr')].map(tr=>{
+    const g=s=>tr.querySelector(s);
+    const pct=parseFloat(g('.h-pct').value),ev=g('.h-end').value;
+    return {name:g('.h-name').value.trim(),count:Math.max(1,parseInt(g('.h-count').value)||1),
+      pct:isNaN(pct)?0:pct,start:parseInt(g('.h-start').value)||0,end:ev===''?null:parseInt(ev)};
+  });
+  QUOTA=[...document.querySelectorAll('#q-tbody tr')].map(tr=>({
+    from:parseInt(tr.querySelector('.q-from').value)||0,
+    val:parseFloat(tr.querySelector('.q-val').value)||0
+  })).sort((a,b)=>a.from-b.from);
+  if(!QUOTA.length)QUOTA=[{from:0,val:0}];
+  const ing=[],gas=[];
+  [...document.querySelectorAll('#m-tbody tr')].forEach(tr=>{
+    ing.push(parseFloat(tr.querySelector('.m-ing').value)||0);
+    gas.push(parseFloat(tr.querySelector('.m-gas').value)||0);
+  });
+  INGRESOS=ing;GASTOS=gas;
+  CAP=parseFloat(document.getElementById('in-cap').value)||CAP;
+  HOY_IDX=Math.max(0,Math.min(24,parseInt(document.getElementById('in-mes').value)||0));
   render();
-  const st=document.getElementById('ep-status');st.classList.add('show');setTimeout(()=>st.classList.remove('show'),2400);
+  const st=document.getElementById('ep-status');
+  const res=await cloudSave();
+  if(res.ok){st.textContent='✓ Guardado en la nube';st.style.color='var(--pos)';}
+  else if(res.msg==='local'){st.textContent='✓ Actualizado (solo local)';st.style.color='var(--warn)';}
+  else{st.textContent='✕ '+res.msg;st.style.color='var(--neg)';}
+  st.classList.add('show');setTimeout(()=>st.classList.remove('show'),3600);
 }
-render();
+
+async function init(){
+  await cloudLoad();
+  await refreshAuth();
+  if(CLOUD_ON) sb.auth.onAuthStateChange((_e,session)=>{currentUser=session?session.user:null;updateAuthUI();});
+  render();
+  updateAuthUI();
+}
+init();
 </script>
 </body>
 </html>
